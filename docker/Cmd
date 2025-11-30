@@ -1,0 +1,7 @@
+# Exec Docker Compose
+docker compose up -d
+
+# Connnect DB
+docker exec -it mysql-db mysql -u root -p
+show databases;
+use technical-db
