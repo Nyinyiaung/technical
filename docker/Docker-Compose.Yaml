@@ -108,7 +108,7 @@ services:
   api:
     build:
       context: ..
-      dockerfile: docker/Dockerfile
+      dockerfile: docker/Dockerfile-API
     container_name: api
     environment:
 #     application-docker.properties

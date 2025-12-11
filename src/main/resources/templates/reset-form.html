@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" xmlns:thymeleaf-extras="spring">
+<head>
+    <meta charset="UTF-8">
+    <title>Reset Your Password</title>
+</head>
+<body style="font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f7f8fa; color: #333; padding: 40px; text-align: center; margin: 0;">
+<div style="max-width: 600px; margin: auto; background-color: #ffffff; border-radius: 12px; padding: 30px 40px; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);">
+    <h2 style="color: #2c3e50;">Reset Your Password</h2>
+
+    <p style="font-size: 16px; line-height: 1.6;">Hello,</p>
+    <p style="font-size: 16px; line-height: 1.6;">You requested to reset your password. Please enter your new password below:</p>
+
+    <form id="passwordResetForm" style="text-align: left; margin: 30px 0;">
+        <input type="hidden" name="email" th:value="${email}">
+        <input type="hidden" name="token" th:value="${token}">
+        <div style="margin-bottom: 20px;">
+            <label for="newPassword" style="display: block; margin-bottom: 8px; font-weight: 500;">New Password</label>
+            <input type="password" id="newPassword" name="newPassword" required 
+                   style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 4px; font-size: 16px;"
+                   minlength="8" maxlength="100">
+        </div>
+        
+        <div style="margin-bottom: 25px;">
+            <label for="confirmPassword" style="display: block; margin-bottom: 8px; font-weight: 500;">Confirm New Password</label>
+            <input type="password" id="confirmPassword" required
+                   style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 4px; font-size: 16px;"
+                   oninput="validatePasswords()">
+            <div id="password-match" style="font-size: 12px; margin-top: 5px; display: none;"></div>
+        </div>
+        
+        <button type="submit" id="resetButton" 
+                style="width: 100%; padding: 12px; background-color: #3498db; color: white; 
+                       border: none; border-radius: 6px; font-size: 16px; font-weight: bold; 
+                       cursor: pointer; margin-top: 10px;"
+                disabled>
+            Reset Password
+        </button>
+    </form>
+
+    <div id="error-message" style="color: #e74c3c; margin: 15px 0; display: none;" role="alert"></div>
+    
+    <p style="font-size: 14px; color: #888; margin-top: 30px;">
+        If you didn't request this, please ignore this email or contact support if you have questions.
+    </p>
+    
+    <div style="margin-top: 30px; font-size: 13px; color: #888; border-top: 1px solid #eee; padding-top: 20px;">
+        &copy; 2025 Your Company Name
+    </div>
+</div>
+
+<script>
+    function validatePasswords() {
+        const password = document.getElementById('newPassword').value;
+        const confirmPassword = document.getElementById('confirmPassword').value;
+        const errorDiv = document.getElementById('error-message');
+        const matchDiv = document.getElementById('password-match');
+        const resetButton = document.getElementById('resetButton');
+        
+        // Reset styles and messages
+        errorDiv.style.display = 'none';
+        matchDiv.style.display = 'block';
+        matchDiv.style.color = '';
+        
+        if (password === '' || confirmPassword === '') {
+            matchDiv.textContent = '';
+            resetButton.disabled = true;
+            return;
+        }
+        
+        if (password !== confirmPassword) {
+            matchDiv.textContent = 'Passwords do not match';
+            matchDiv.style.color = '#e74c3c';
+            resetButton.disabled = true;
+        } else {
+            matchDiv.textContent = 'Passwords match';
+            matchDiv.style.color = '#27ae60';
+            resetButton.disabled = false;
+        }
+    }
+    
+    document.getElementById('passwordResetForm').addEventListener('submit', async function(e) {
+        e.preventDefault();
+        
+        const form = e.target;
+        const password = document.getElementById('newPassword').value;
+        const confirmPassword = document.getElementById('confirmPassword').value;
+        const errorDiv = document.getElementById('error-message');
+        
+        if (password !== confirmPassword) {
+            errorDiv.textContent = 'Passwords do not match. Please check and try again.';
+            errorDiv.style.display = 'block';
+            return false;
+        }
+        
+        if (password.length < 8) {
+            errorDiv.textContent = 'Password must be at least 8 characters long.';
+            errorDiv.style.display = 'block';
+            return false;
+        }
+        
+        try {
+            const formData = {
+                email: form.email.value,
+                token: form.token.value,
+                newPassword: password
+            };
+            
+            // Extract the base URL without query parameters
+            const url = new URL('[[${url}]]');
+            const baseUrl = url.origin + '/api/auth/reset-password';
+            
+            const response = await fetch(baseUrl, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json'
+                },
+                body: JSON.stringify(formData),
+                credentials: 'include'
+            });
+            
+            const data = await response.json();
+            
+            if (response.ok) {
+                window.location.href = "http://localhost:8080/api/view/password-reset-success";
+            } else {
+                errorDiv.textContent = data.message || 'An error occurred. Please try again.';
+                errorDiv.style.display = 'block';
+            }
+        } catch (error) {
+            errorDiv.textContent = 'An error occurred. Please try again.';
+            errorDiv.style.display = 'block';
+            console.error('Error:', error);
+        }
+    });
+    
+    // Initial validation
+    document.getElementById('newPassword').addEventListener('input', validatePasswords);
+    document.getElementById('confirmPassword').addEventListener('input', validatePasswords);
+</script>
+</body>
+</html>

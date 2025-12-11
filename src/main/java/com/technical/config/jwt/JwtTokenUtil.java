@@ -72,9 +72,28 @@ public class JwtTokenUtil {
 		return token;
 	}
 
-	// validate token
-	public boolean validateToken(String token, String email) {
-		final String extractedEmail = getEmailFromToken(token);
-		return (extractedEmail.equals(email) && !isTokenExpired(token));
-	}
+	    // validate token with email
+    public boolean validateToken(String token, String email) {
+        final String extractedEmail = getEmailFromToken(token);
+        return (extractedEmail.equals(email) && !isTokenExpired(token));
+    }
+    
+    // validate token without email check (for password reset)
+    public boolean validateToken(String token) {
+        try {
+            return !isTokenExpired(token);
+        } catch (Exception e) {
+            return false;
+        }
+    }
+    
+    // generate token with custom expiration
+    public String generateTokenWithExpiration(String username, long expirationMs) {
+        return Jwts.builder()
+                .setSubject(username)
+                .setIssuedAt(new Date(System.currentTimeMillis()))
+                .setExpiration(new Date(System.currentTimeMillis() + expirationMs))
+                .signWith(getSigningKey(), SignatureAlgorithm.HS256)
+                .compact();
+    }
 }

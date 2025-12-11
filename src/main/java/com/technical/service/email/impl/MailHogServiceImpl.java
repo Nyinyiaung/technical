@@ -26,7 +26,7 @@ public class MailHogServiceImpl implements EmailService {
     private String domain;
 
     private static final String VERIFY_EMAIL = "%s/api/auth/verify-email?email=%s";
-    private static final String RESET_EMAIL = "%s/api/auth/reset-password?email=%s";
+    private static final String RESET_EMAIL = "%s/api/auth/reset-password?email=%s&token=%s";
 
     public void sendVerificationEmail(User user) {
         Context context = new Context();
@@ -47,10 +47,11 @@ public class MailHogServiceImpl implements EmailService {
         mailSender.send(message);
     }
 
-    public void sendPasswordResetEmail(String toEmail) {
+    public void sendPasswordResetEmail(String toEmail, String token) {
         Context context = new Context();
-        context.setVariable("name", user.getName());
-        context.setVariable("url", String.format(VERIFY_EMAIL, domain, user.getEmail()));
+        context.setVariable("url", String.format(RESET_EMAIL, domain, toEmail, token));
+        context.setVariable("email", toEmail);
+        context.setVariable("token", token);
 
         String htmlContent = templateEngine.process("reset-form", context);
 
