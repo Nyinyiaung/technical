@@ -1,7 +1,28 @@
 # Exec Docker Compose
 docker compose up -d
 
-# Connnect DB
+# Stop Docker Compose
+docker compose down
+
+# Check running container
+docker ps
+
+# Check logs
+docker logs api
+
+# Check image
+docker images
+
+# stop and remove the container
+docker rm -f api
+
+# Remove image
+docker rmi api
+
+# Build image
+docker compose -f docker/docker-compose.yaml up -d --build api
+
+# Connect DB
 docker exec -it mysql-db mysql -u root -p
 show databases;
 use technical-db
