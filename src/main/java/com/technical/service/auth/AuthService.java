@@ -1,8 +1,11 @@
 package com.technical.service.auth;
 
-import com.technical.dto.request.LoginRequest;
-import com.technical.dto.request.RegisterRequest;
-import com.technical.dto.response.LoginResponse;
+import com.technical.dto.UserDTO;
+import com.technical.dto.auth.request.LoginRequest;
+import com.technical.dto.auth.request.RegisterRequest;
+import com.technical.dto.auth.response.LoginResponse;
+
+import java.util.List;
 
 public interface AuthService {
 
@@ -15,4 +18,8 @@ public interface AuthService {
     void initiatePasswordReset(String email);
 
     void resetPassword(String email, String token, String newPassword);
+
+    UserDTO getUserByEmail(String email);
+
+    List<UserDTO> getAllUsers();
 }

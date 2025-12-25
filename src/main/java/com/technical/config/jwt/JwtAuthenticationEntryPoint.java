@@ -3,7 +3,7 @@ package com.technical.config.jwt;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.technical.commonutil.DateUtil;
 import com.technical.config.MessageConfig;
-import com.technical.dto.ErrorResponse;
+import com.technical.dto.common.ErrorResponse;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;

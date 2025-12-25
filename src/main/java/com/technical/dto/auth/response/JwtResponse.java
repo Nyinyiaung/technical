@@ -1,4 +1,4 @@
-package com.technical.dto.response;
+package com.technical.dto.auth.response;
 
 import java.io.Serial;
 import java.io.Serializable;

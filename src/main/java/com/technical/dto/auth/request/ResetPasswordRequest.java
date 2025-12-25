@@ -1,4 +1,4 @@
-package com.technical.dto.request;
+package com.technical.dto.auth.request;
 
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;

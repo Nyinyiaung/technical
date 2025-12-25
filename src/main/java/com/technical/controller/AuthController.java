@@ -2,13 +2,13 @@ package com.technical.controller;
 
 import com.technical.config.MessageConfig;
 import com.technical.config.jwt.service.JwtTokenService;
-import com.technical.dto.SuccessResponse;
-import com.technical.dto.request.ForgotPasswordRequest;
-import com.technical.dto.request.LoginRequest;
-import com.technical.dto.request.RegisterRequest;
-import com.technical.dto.request.ResetPasswordRequest;
-import com.technical.dto.response.LoginResponse;
-import com.technical.service.auth.impl.AuthServiceImpl;
+import com.technical.dto.common.SuccessResponse;
+import com.technical.dto.auth.request.ForgotPasswordRequest;
+import com.technical.dto.auth.request.LoginRequest;
+import com.technical.dto.auth.request.RegisterRequest;
+import com.technical.dto.auth.request.ResetPasswordRequest;
+import com.technical.dto.auth.response.LoginResponse;
+import com.technical.service.auth.AuthService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -19,13 +19,13 @@ import org.springframework.web.bind.annotation.*;
 @RequestMapping("/api/auth")
 @RequiredArgsConstructor
 public class AuthController {
-    private final AuthServiceImpl authServiceImpl;
+    private final AuthService authService;
     private final JwtTokenService jwtTokenService;
     private final MessageConfig messageConfig;
 
     @PostMapping("/register")
     public ResponseEntity<SuccessResponse> registerUser(@Valid @RequestBody RegisterRequest registerRequest) {
-        authServiceImpl.registerUser(registerRequest);
+        authService.registerUser(registerRequest);
 
         return new ResponseEntity<>(SuccessResponse.builder()
                 .message(messageConfig.getMessage("auth.registered"))
@@ -34,7 +34,7 @@ public class AuthController {
 
     @PostMapping("/login")
     public ResponseEntity<SuccessResponse> authenticateUser(@Valid @RequestBody LoginRequest loginRequest) {
-        LoginResponse loginResponse = authServiceImpl.loginUser(loginRequest);
+        LoginResponse loginResponse = authService.loginUser(loginRequest);
 
         return new ResponseEntity<>(SuccessResponse.builder()
                 .message(messageConfig.getMessage("auth.login.success"))
@@ -43,7 +43,7 @@ public class AuthController {
 
     @GetMapping("/verify-email")
     public ResponseEntity<SuccessResponse> verifyEmail(@RequestParam String email) {
-        authServiceImpl.verifyEmail(email);
+        authService.verifyEmail(email);
 
         return new ResponseEntity<>(SuccessResponse.builder()
                 .message(messageConfig.getMessage("auth.verified.email"))
@@ -52,7 +52,7 @@ public class AuthController {
 
     @PostMapping("/forgot-password")
     public ResponseEntity<SuccessResponse> forgotPassword(@RequestBody ForgotPasswordRequest request) {
-        authServiceImpl.initiatePasswordReset(request.getEmail());
+        authService.initiatePasswordReset(request.getEmail());
 
         return new ResponseEntity<>(SuccessResponse.builder()
                 .message(messageConfig.getMessage("auth.sent.reset.email"))
@@ -61,7 +61,7 @@ public class AuthController {
 
     @PostMapping("/reset-password")
     public ResponseEntity<SuccessResponse> resetPassword(@RequestBody ResetPasswordRequest request) {
-        authServiceImpl.resetPassword(request.getEmail(), request.getToken(), request.getNewPassword());
+        authService.resetPassword(request.getEmail(), request.getToken(), request.getNewPassword());
 
         return new ResponseEntity<>(SuccessResponse.builder()
                 .message(messageConfig.getMessage("auth.reset.password.success"))

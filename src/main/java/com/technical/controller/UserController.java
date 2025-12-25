@@ -1,7 +1,7 @@
 package com.technical.controller;
 
 import com.technical.dto.UserDTO;
-import com.technical.service.auth.impl.AuthServiceImpl;
+import com.technical.service.auth.AuthService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
@@ -19,7 +19,7 @@ import java.util.List;
 @Slf4j
 public class UserController {
 
-    private final AuthServiceImpl authService;
+    private final AuthService authService;
 
     @GetMapping("/profile")
     public ResponseEntity<UserDTO> getUserProfile(@AuthenticationPrincipal UserDetails userDetails) {

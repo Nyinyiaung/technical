@@ -19,7 +19,10 @@ docker rm -f api
 # Remove image
 docker rmi api
 
-# Build image
+# build image
+docker build -t api .
+
+# Build image and run
 docker compose -f docker/docker-compose.yaml up -d --build api
 
 # Connect DB

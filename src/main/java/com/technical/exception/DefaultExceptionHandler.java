@@ -1,7 +1,7 @@
 package com.technical.exception;
 
 import com.technical.config.MessageConfig;
-import com.technical.dto.ErrorResponse;
+import com.technical.dto.common.ErrorResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.dao.DataAccessException;

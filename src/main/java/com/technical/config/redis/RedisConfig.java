@@ -4,25 +4,34 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.data.redis.connection.RedisConnectionFactory;
 import org.springframework.data.redis.core.RedisTemplate;
-import org.springframework.data.redis.repository.configuration.EnableRedisRepositories;
-import org.springframework.data.redis.serializer.GenericJackson2JsonRedisSerializer;
-import org.springframework.data.redis.serializer.StringRedisSerializer;
+import org.springframework.data.redis.serializer.RedisSerializer;
 
 @Configuration
-@EnableRedisRepositories
 public class RedisConfig {
 
-  @Bean
-  public RedisTemplate<String, Object> redisTemplate(RedisConnectionFactory connectionFactory) {
-    RedisTemplate<String, Object> template = new RedisTemplate<>();
-    template.setConnectionFactory(connectionFactory);
+    @Bean
+    public RedisTemplate<String, Object> redisTemplate(RedisConnectionFactory connectionFactory) {
+        RedisTemplate<String, Object> template = new RedisTemplate<>();
+        configureRedisTemplate(template, connectionFactory);
+        return template;
+    }
 
-    // Use String serializer for keys (important for @RedisHash keys)
-    template.setKeySerializer(new StringRedisSerializer());
+    @Bean
+    public RedisTemplate<String, Integer> rateLimitRedisTemplate(RedisConnectionFactory connectionFactory) {
+        RedisTemplate<String, Integer> template = new RedisTemplate<>();
+        template.setConnectionFactory(connectionFactory);
+        template.setKeySerializer(RedisSerializer.string());
+        template.setValueSerializer(RedisSerializer.json());
+        template.setHashKeySerializer(RedisSerializer.string());
+        template.setHashValueSerializer(RedisSerializer.json());
+        template.afterPropertiesSet();
+        return template;
+    }
 
-    // Use JSON serializer for values
-    template.setValueSerializer(new GenericJackson2JsonRedisSerializer());
-
-    return template;
-  }
+    private void configureRedisTemplate(RedisTemplate<?, ?> template, RedisConnectionFactory connectionFactory) {
+        template.setConnectionFactory(connectionFactory);
+        template.setKeySerializer(RedisSerializer.string());
+        template.setHashKeySerializer(RedisSerializer.string());
+        template.setEnableDefaultSerializer(false);
+    }
 }

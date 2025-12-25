@@ -1,7 +1,7 @@
 package com.technical.mapper;
 
 import com.technical.dto.UserDTO;
-import com.technical.dto.request.RegisterRequest;
+import com.technical.dto.auth.request.RegisterRequest;
 import com.technical.entity.user.User;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
