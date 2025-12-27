@@ -1,6 +1,6 @@
 package com.technical.mapper;
 
-import com.technical.dto.UserDTO;
+import com.technical.dto.user.UserDTO;
 import com.technical.dto.auth.request.RegisterRequest;
 import com.technical.entity.user.User;
 import org.mapstruct.Mapper;

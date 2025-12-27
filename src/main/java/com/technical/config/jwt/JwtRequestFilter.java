@@ -9,6 +9,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.jspecify.annotations.NonNull;
 import org.slf4j.MDC;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -34,8 +35,8 @@ public class JwtRequestFilter extends OncePerRequestFilter {
 	private String byPassUrls;
 
 	@Override
-	protected void doFilterInternal(HttpServletRequest httpServletRequest, HttpServletResponse httpServletResponse,
-			FilterChain filterChain) throws ServletException, IOException {
+	protected void doFilterInternal(HttpServletRequest httpServletRequest, @NonNull HttpServletResponse httpServletResponse,
+                                    @NonNull FilterChain filterChain) throws ServletException, IOException {
 
 		final String requestTokenHeader = httpServletRequest.getHeader("Authorization");
 
@@ -66,7 +67,7 @@ public class JwtRequestFilter extends OncePerRequestFilter {
 
 			UserDetails userDetails = jwtUserDetailsService.loadUserByUsername(email);
 			// if token is valid configure, Spring Security to manually set authentication
-			if (Boolean.TRUE.equals(jwtTokenUtil.validateToken(jwtToken, userDetails.getUsername()))) {
+			if (jwtTokenUtil.validateToken(jwtToken, userDetails.getUsername())) {
 				UsernamePasswordAuthenticationToken authToken = new UsernamePasswordAuthenticationToken(
 						userDetails, null, userDetails.getAuthorities());
 				authToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(httpServletRequest));

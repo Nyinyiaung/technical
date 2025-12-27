@@ -21,8 +21,6 @@ public class RedisRateLimitService {
             return false;
         }
 
-        log.info("key: {}, path: {}", key, path);
-
         // Get endpoint-specific config or use defaults
         RateLimitProperties.EndpointConfig config = properties.getConfigForPath(path)
                 .orElseGet(() -> new RateLimitProperties.EndpointConfig() {{
@@ -32,23 +30,25 @@ public class RedisRateLimitService {
 
         log.info("config: {}", config);
 
-        String rateLimiterKey = String.format("rate_limit:%s", key);
         ValueOperations<String, Integer> valueOps = redisTemplate.opsForValue();
 
-        Integer currentUsage = valueOps.get(rateLimiterKey);
-        if (currentUsage == null) {
-            currentUsage = 0;
+        // Atomically increment the counter
+        Long current = valueOps.increment(key, 1);
+
+        log.info("key: {}, current: {}", key, current);
+
+        // If this is the first request, set the expiration
+        if (current != null && current == 1) {
+            redisTemplate.expire(key, config.getWindow(), TimeUnit.SECONDS);
         }
 
-        log.info("rateLimiterKey = {}, currentUsage = {}, limit = {}, window = {}",
-                rateLimiterKey, currentUsage, config.getLimit(), config.getWindow());
-
-        if (currentUsage < config.getLimit()) {
-            valueOps.set(rateLimiterKey, currentUsage + 1,
-                    config.getWindow(), TimeUnit.SECONDS);
-            return false;
+        // Check if rate limit is exceeded
+        if (current != null && current > config.getLimit()) {
+            log.warn("Rate limit exceeded for key: {}, current: {}, limit: {}", key, current, config.getLimit());
+            return true;
         }
-        return true;
+
+        return false;
     }
 
     public boolean shouldRateLimit(String path) {

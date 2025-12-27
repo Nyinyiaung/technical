@@ -2,7 +2,6 @@ package com.technical.service.auth.impl;
 
 import com.technical.config.jwt.JwtTokenUtil;
 import com.technical.dao.UserRepository;
-import com.technical.dto.UserDTO;
 import com.technical.dto.auth.request.LoginRequest;
 import com.technical.dto.auth.request.RegisterRequest;
 import com.technical.dto.auth.response.LoginResponse;
@@ -20,9 +19,6 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
-import java.util.List;
-import java.util.Objects;
 
 @Service
 @RequiredArgsConstructor
@@ -46,12 +42,14 @@ public class AuthServiceImpl implements AuthService {
         User user = userMapper.toEntity(request);
         // Set the encoded password
         user.setPassword(passwordEncoder.encode(request.getPassword()));
-        
+
         userRepository.save(user);
         emailService.sendVerificationEmail(user);
     }
 
     public LoginResponse loginUser(LoginRequest loginRequest) {
+        userRepository.findByEmailAndIsVerifiedTrue(loginRequest.getEmail()).orElseThrow(() -> new ResourceNotFoundException(String.format("User not found with email: %s", loginRequest.getEmail())));
+
         Authentication authentication = authenticationManager.authenticate(
             new UsernamePasswordAuthenticationToken(loginRequest.getEmail(), loginRequest.getPassword())
         );
@@ -85,7 +83,7 @@ public class AuthServiceImpl implements AuthService {
     
     public void initiatePasswordReset(String email) {
         User user = userRepository.findByEmailAndIsVerifiedTrue(email)
-                .orElseThrow(() -> new ResourceNotFoundException("User not found with email: " + email));
+                .orElseThrow(() -> new ResourceNotFoundException(String.format("User not found with email: %s", email)));
         
         // Generate a password reset token with short expiration (15 minutes)
         String resetToken = jwtUtil.generateTokenWithExpiration(user.getEmail(), 15 * 60 * 1000); // 15 minutes
@@ -105,23 +103,10 @@ public class AuthServiceImpl implements AuthService {
         }
         
         User user = userRepository.findByEmailAndIsVerifiedTrue(email)
-                .orElseThrow(() -> new ResourceNotFoundException("User not found with email: " + email));
+                .orElseThrow(() -> new ResourceNotFoundException(String.format("User not found with email: %s", email)));
         
         // Update the password
         user.setPassword(passwordEncoder.encode(newPassword));
         userRepository.save(user);
-    }
-
-    public UserDTO getUserByEmail(String email) {
-        return userRepository.findByEmail(email)
-                .map(userMapper::toUserDTO)
-                .orElseThrow(() -> new ResourceNotFoundException("User not found."));
-    }
-
-    public List<UserDTO> getAllUsers() {
-        return userRepository.findAll().stream()
-                .filter(Objects::nonNull)
-                .map(userMapper::toUserDTO)
-                .toList();
     }
 }

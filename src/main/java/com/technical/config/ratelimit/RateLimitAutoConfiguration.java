@@ -1,6 +1,5 @@
 package com.technical.config.ratelimit;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.context.properties.ConfigurationPropertiesScan;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
@@ -23,12 +22,5 @@ public class RateLimitAutoConfiguration {
             RedisTemplate<String, Integer> rateLimitRedisTemplate,
             RateLimitProperties properties) {
         return new RedisRateLimitService(rateLimitRedisTemplate, properties);
-    }
-
-    @Bean
-    public RateLimitAspect rateLimitAspect(
-            RedisRateLimitService rateLimitService,
-            ObjectMapper objectMapper) {
-        return new RateLimitAspect(rateLimitService, objectMapper);
     }
 }

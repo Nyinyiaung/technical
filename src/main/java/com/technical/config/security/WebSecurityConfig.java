@@ -7,7 +7,6 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.authentication.AuthenticationManager;
-import org.springframework.security.authentication.AuthenticationProvider;
 import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
@@ -21,6 +20,7 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
+
 import java.util.Arrays;
 import java.util.List;
 
@@ -40,13 +40,20 @@ public class WebSecurityConfig {
 	@Bean
 	public SecurityFilterChain securityFilterChain(HttpSecurity httpSecurity) throws Exception {
 		httpSecurity
+				// Enable CORS
 				.cors(cors -> cors.configurationSource(corsConfigurationSource()))
+				// Disable CSRF as we're using JWT
 				.csrf(AbstractHttpConfigurer::disable)
+				// Set exception handling
 				.exceptionHandling(handler -> handler.authenticationEntryPoint(jwtAuthenticationEntryPoint))
+				// Set session management to stateless
 				.sessionManagement(manager -> manager.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+            	// Set authentication provider
 				.authenticationProvider(authenticationProvider())
+				// Add JWT filter
 				.addFilterBefore(jwtRequestFilter, UsernamePasswordAuthenticationFilter.class);
 		if(byPassUrls != null && !byPassUrls.isEmpty()) {
+			// Set authorization rules
 			httpSecurity.authorizeHttpRequests(
 					request -> request.requestMatchers(byPassUrls.split(",")).permitAll().anyRequest().authenticated());
 		}
@@ -68,16 +75,14 @@ public class WebSecurityConfig {
 
 	@Bean
 	public PasswordEncoder passwordEncoder() {
-		return new BCryptPasswordEncoder();
+		return new BCryptPasswordEncoder(12);
 	}
 
 	@Bean
-	public AuthenticationProvider authenticationProvider() {
+	public DaoAuthenticationProvider authenticationProvider() {
 		DaoAuthenticationProvider authProvider = new DaoAuthenticationProvider();
 		authProvider.setUserDetailsService(jwtUserDetailsService);
 		authProvider.setPasswordEncoder(passwordEncoder());
-
-		// Default will hide and won't should relevant message.
 		authProvider.setHideUserNotFoundExceptions(false);
 		return authProvider;
 	}

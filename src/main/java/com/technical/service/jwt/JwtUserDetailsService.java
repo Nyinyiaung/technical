@@ -22,7 +22,7 @@ public class JwtUserDetailsService implements UserDetailsService {
 	@Override
 	public UserDetails loadUserByUsername(String email) throws UsernameNotFoundException {
 		User user = userRepository.findByEmailAndIsVerifiedTrue(email)
-				.orElseThrow(() -> new UsernameNotFoundException("User not found with email: " + email));
+				.orElseThrow(() -> new UsernameNotFoundException(String.format("User not found with email: %s", email)));
 
 		Set<GrantedAuthority> authorities = Collections.singleton(new SimpleGrantedAuthority("ROLE_USER"));
 
