@@ -2,15 +2,17 @@ package com.technical.controller;
 
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
 
 @Controller
-@RequestMapping("/api/view")
 public class ViewController {
 
-    @GetMapping("/password-reset-success")
+    @GetMapping("/")
+    public String welcome() {
+        return "welcome";
+    }
+    
+    @GetMapping("/api/view/password-reset-success")
     public String passwordResetSuccess() {
         return "password-reset-success";
     }
-
 }

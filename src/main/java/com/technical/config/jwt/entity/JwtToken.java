@@ -6,8 +6,9 @@ import lombok.NoArgsConstructor;
 import lombok.experimental.SuperBuilder;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.redis.core.RedisHash;
+import org.springframework.data.redis.core.TimeToLive;
 
-@RedisHash(value = "JwtToken", timeToLive = 3600)
+@RedisHash(value = "JwtToken")
 @Data
 @SuperBuilder
 @NoArgsConstructor
@@ -18,4 +19,7 @@ public class JwtToken {
 	private String token;
 	private Integer valid; // 1 - Valid, 2 - Invalid
 	private String userName;
+	private String tokenType; // Store the token type (LOGIN, RESET, VERIFICATION)
+	@TimeToLive
+	private long timeToLive;
 }

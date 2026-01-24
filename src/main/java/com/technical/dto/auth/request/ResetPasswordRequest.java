@@ -10,6 +10,7 @@ public class ResetPasswordRequest {
     @Email(message = "msg.email.must.be.valid")
     private String email;
 
+    @NotBlank(message = "msg.token.required")
     private String token; // For verification
 
     @NotBlank(message = "msg.password.required")

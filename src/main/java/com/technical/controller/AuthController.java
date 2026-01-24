@@ -34,9 +34,15 @@ public class AuthController extends MasterCodeBase {
         return successResponse("auth.login.success", loginResponse, HttpStatus.OK);
     }
 
+    @PostMapping("/refresh-token")
+    public ResponseEntity<SuccessResponse> refreshToken(@RequestParam String refreshToken) {
+        LoginResponse refreshResponse = authService.refreshToken(refreshToken);
+        return successResponse("auth.refresh.token.success", refreshResponse, HttpStatus.OK);
+    }
+
     @GetMapping("/verify-email")
-    public ResponseEntity<SuccessResponse> verifyEmail(@RequestParam String email) {
-        authService.verifyEmail(email);
+    public ResponseEntity<SuccessResponse> verifyEmail(@RequestParam String email, @RequestParam String token) {
+        authService.verifyEmail(email, token);
         return successResponse("auth.verified.email", null, HttpStatus.OK);
     }
 

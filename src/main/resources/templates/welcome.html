@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Welcome</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            font-family: 'Poppins', sans-serif;
+            overflow: hidden;
+        }
+        
+        .welcome-container {
+            text-align: center;
+            z-index: 1;
+        }
+        
+        .welcome-text {
+            font-size: 4rem;
+            font-weight: 600;
+            background: linear-gradient(45deg, #3b82f6, #8b5cf6, #ec4899);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+            background-size: 300% 300%;
+            animation: gradient 8s ease infinite, fadeIn 2s ease-out;
+        }
+        
+        .subtext {
+            font-size: 1.5rem;
+            color: #4b5563;
+            margin-top: 1rem;
+            opacity: 0;
+            animation: fadeIn 1s ease-out 0.5s forwards;
+        }
+        
+        @keyframes gradient {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        .floating {
+            animation: floating 3s ease-in-out infinite;
+            margin-bottom: 2rem;
+        }
+        
+        @keyframes floating {
+            0% { transform: translateY(0px); }
+            50% { transform: translateY(-15px); }
+            100% { transform: translateY(0px); }
+        }
+    </style>
+</head>
+<body>
+    <div class="welcome-container">
+        <div class="floating">
+            <svg width="120" height="120" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M12 22C17.5228 22 22 17.5228 22 12C22 6.47715 17.5228 2 12 2C6.47715 2 2 6.47715 2 12C2 17.5228 6.47715 22 12 22Z" stroke="url(#paint0_linear)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="animate-pulse"/>
+                <path d="M12 16V12M12 8H12.01" stroke="url(#paint1_linear)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                <defs>
+                    <linearGradient id="paint0_linear" x1="2" y1="2" x2="22" y2="22" gradientUnits="userSpaceOnUse">
+                        <stop stop-color="#3B82F6"/>
+                        <stop offset="1" stop-color="#8B5CF6"/>
+                    </linearGradient>
+                    <linearGradient id="paint1_linear" x1="12" y1="8" x2="12.0061" y2="16" gradientUnits="userSpaceOnUse">
+                        <stop stop-color="#3B82F6"/>
+                        <stop offset="1" stop-color="#8B5CF6"/>
+                    </linearGradient>
+                </defs>
+            </svg>
+        </div>
+        <h1 class="welcome-text">Welcome</h1>
+        <p class="subtext">to our application</p>
+    </div>
+</body>
+</html>

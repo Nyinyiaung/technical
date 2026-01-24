@@ -1,6 +1,8 @@
 package com.technical.config.jwt;
 
+import com.technical.commonutil.CommonUtil;
 import com.technical.commonutil.DateUtil;
+import com.technical.config.jwt.entity.JwtToken;
 import com.technical.config.jwt.service.JwtTokenService;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
@@ -17,8 +19,20 @@ import java.util.function.Function;
 @Component
 @RequiredArgsConstructor
 public class JwtTokenUtil {
-	@Value("${jwt.token.expired}")
-	private Integer jwtTokenExpired;
+	@Value("${jwt.token.login.expiration}")
+	private String loginTokenExpiration;
+
+	@Value("${jwt.token.reset.expiration}")
+	private String resetTokenExpiration;
+
+	@Value("${jwt.token.verification.expiration}")
+	private String verificationTokenExpiration;
+
+	@Value("${jwt.token.default.expiration}")
+	private String defaultTokenExpiration;
+
+	@Value("${jwt.token.refresh.expiration}")
+	private String refreshTokenExpiration;
 
 	@Value("${jwt.secret}")
 	private String secret;
@@ -44,7 +58,7 @@ public class JwtTokenUtil {
 		return Keys.hmacShaKeyFor(java.util.Base64.getDecoder().decode(secret));
 	}
 
-	// for retrieveing any information from token we will need the secret key
+	// for retrieving any information from token we will need the secret key
 	private Claims getAllClaimsFromToken(String token) {
 		return Jwts.parserBuilder()
 				.setSigningKey(getSigningKey())
@@ -59,41 +73,57 @@ public class JwtTokenUtil {
 		return expiration.before(new Date());
 	}
 
-	// generate token for user
-	public String generateToken(String userName) {
-		String token = Jwts.builder()
-				.setSubject(userName)
-				.setIssuedAt(new Date(System.currentTimeMillis()))
-				// Set the expiration time to 1 hour from now
-				.setExpiration(DateUtil.addMinutes(jwtTokenExpired))
-				.signWith(getSigningKey(), SignatureAlgorithm.HS256)
-				.compact();
-		jwtTokenService.saveJwtToken(token, userName);
-		return token;
-	}
-
-	    // validate token with email
+	// validate token with email
     public boolean validateToken(String token, String email) {
+		JwtToken jwtToken = jwtTokenService.findByToken(token);
+		if (jwtToken == null) return false;
+
         final String extractedEmail = getEmailFromToken(token);
         return (extractedEmail.equals(email) && !isTokenExpired(token));
     }
-    
+
     // validate token without email check (for password reset)
     public boolean validateToken(String token) {
-        try {
-            return !isTokenExpired(token);
-        } catch (Exception e) {
-            return false;
-        }
+		JwtToken jwtToken = jwtTokenService.findByToken(token);
+		if (jwtToken == null) return false;
+
+		return !isTokenExpired(token);
     }
-    
-    // generate token with custom expiration
-    public String generateTokenWithExpiration(String username, long expirationMs) {
-        return Jwts.builder()
-                .setSubject(username)
-                .setIssuedAt(new Date(System.currentTimeMillis()))
-                .setExpiration(new Date(System.currentTimeMillis() + expirationMs))
-                .signWith(getSigningKey(), SignatureAlgorithm.HS256)
-                .compact();
-    }
+
+	public void deleteToken(String token) {
+		jwtTokenService.invalidateJwtToken(token);
+	}
+
+	// generate token for user
+	public String generateToken(String userName, String tokenType) {
+		Date timeout = getExpirationForTokenType(tokenType);
+		String token = Jwts.builder()
+				.setSubject(userName)
+				.setIssuedAt(new Date(System.currentTimeMillis()))
+				.setExpiration(timeout)
+				.signWith(getSigningKey(), SignatureAlgorithm.HS256)
+				.compact();
+		jwtTokenService.saveJwtToken(token, userName, tokenType, DateUtil.getMillis(timeout));
+		return token;
+	}
+
+	/**
+	 * Return the expiration date for a given token type.
+	 * The expiration date is determined by the value of the corresponding environment variable.
+	 * If the environment variable is not set, the default expiration date is used.
+	 *
+	 * @param tokenType the type of the token (LOGIN, RESET, or VERIFICATION)
+	 * @return the expiration date for the given token type
+	 */
+	private Date getExpirationForTokenType(String tokenType) {
+		String expirationInMinutes = switch (tokenType) {
+			case CommonUtil.ACCESS_TOKEN_TYPE -> loginTokenExpiration;
+			case CommonUtil.RESET_TOKEN_TYPE -> resetTokenExpiration;
+			case CommonUtil.VERIFICATION_TOKEN_TYPE -> verificationTokenExpiration;
+			case CommonUtil.REFRESH_TOKEN_TYPE -> refreshTokenExpiration;
+			default -> defaultTokenExpiration;
+		};
+
+		return DateUtil.addMinutes(Integer.valueOf(expirationInMinutes));
+	}
 }

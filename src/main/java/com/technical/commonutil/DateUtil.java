@@ -12,4 +12,8 @@ public class DateUtil {
 		now.add(Calendar.MINUTE, minutes);
 		return now.getTime();
 	}
+
+	public static long getMillis(Date timeout) {
+		return (timeout.getTime() - new Date().getTime()) / 1000;
+	}
 }

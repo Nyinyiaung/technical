@@ -10,14 +10,7 @@ import org.springframework.data.redis.serializer.RedisSerializer;
 public class RedisConfig {
 
     @Bean
-    public RedisTemplate<String, Object> redisTemplate(RedisConnectionFactory connectionFactory) {
-        RedisTemplate<String, Object> template = new RedisTemplate<>();
-        configureRedisTemplate(template, connectionFactory);
-        return template;
-    }
-
-    @Bean
-    public RedisTemplate<String, Integer> rateLimitRedisTemplate(RedisConnectionFactory connectionFactory) {
+    public RedisTemplate<String, Integer> redisTemplate(RedisConnectionFactory connectionFactory) {
         RedisTemplate<String, Integer> template = new RedisTemplate<>();
         template.setConnectionFactory(connectionFactory);
         template.setKeySerializer(RedisSerializer.string());
@@ -26,12 +19,5 @@ public class RedisConfig {
         template.setHashValueSerializer(RedisSerializer.json());
         template.afterPropertiesSet();
         return template;
-    }
-
-    private void configureRedisTemplate(RedisTemplate<?, ?> template, RedisConnectionFactory connectionFactory) {
-        template.setConnectionFactory(connectionFactory);
-        template.setKeySerializer(RedisSerializer.string());
-        template.setHashKeySerializer(RedisSerializer.string());
-        template.setEnableDefaultSerializer(false);
     }
 }
