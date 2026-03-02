@@ -7,14 +7,15 @@ import com.technical.dto.auth.request.LoginRequest;
 import com.technical.dto.auth.request.RegisterRequest;
 import com.technical.dto.auth.response.LoginResponse;
 import com.technical.entity.user.User;
+import com.technical.exception.EmailRequireVerificationException;
 import com.technical.exception.ResourceNotFoundException;
 import com.technical.exception.UserAlreadyExistsException;
 import com.technical.mapper.UserMapper;
 import com.technical.service.auth.AuthService;
-import com.technical.service.email.EmailService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
@@ -33,30 +34,30 @@ public class AuthServiceImpl implements AuthService {
     private final PasswordEncoder passwordEncoder;
     private final AuthenticationManager authenticationManager;
     private final JwtTokenUtil jwtUtil;
-    private final EmailService emailService;
 
+    // To prevent failing database transaction after email sending
+    private final ApplicationEventPublisher eventPublisher;
     private final UserMapper userMapper;
-    
+
+    private static final String USER_NOT_FOUND_MESSAGE = "User not found with email: %s";
+
     public void registerUser(RegisterRequest request) {
         if (userRepository.existsByEmail(request.getEmail())) {
             throw new UserAlreadyExistsException("username.already.registered");
         }
 
-        // Map RegisterRequest to User entity using MapStruct
         User user = userMapper.toEntity(request);
-        // Set the encoded password
-        user.setPassword(passwordEncoder.encode(request.getPassword()));
-
         userRepository.save(user);
 
-        // Generate a password reset token with short expiration (15 minutes)
-        String verificationToken = jwtUtil.generateToken(user.getEmail(), CommonUtil.VERIFICATION_TOKEN_TYPE); // 30 minutes
-
-        emailService.sendVerificationEmail(user, verificationToken);
+        // Publish the user registration event to trigger email sending
+        eventPublisher.publishEvent(user);
     }
 
     public LoginResponse loginUser(LoginRequest loginRequest) {
-        userRepository.findByEmailAndIsVerifiedTrue(loginRequest.getEmail()).orElseThrow(() -> new ResourceNotFoundException(String.format("User not found with email: %s", loginRequest.getEmail())));
+        User user = userRepository.findByEmail(loginRequest.getEmail()).orElseThrow(() -> new ResourceNotFoundException(String.format(USER_NOT_FOUND_MESSAGE, loginRequest.getEmail())));
+        if (!user.isVerified()) {
+            throw new EmailRequireVerificationException(String.format("User not verified with email: %s, please verify your email.", loginRequest.getEmail()));
+        }
 
         Authentication authentication = authenticationManager.authenticate(
             new UsernamePasswordAuthenticationToken(loginRequest.getEmail(), loginRequest.getPassword())
@@ -65,6 +66,11 @@ public class AuthServiceImpl implements AuthService {
         String accessToken = jwtUtil.generateToken(authentication.getName(), CommonUtil.ACCESS_TOKEN_TYPE);
         String refreshToken = jwtUtil.generateToken(authentication.getName(), CommonUtil.REFRESH_TOKEN_TYPE);
         return new LoginResponse(accessToken, refreshToken);
+    }
+
+    public void resendVerificationEmail(String email) {
+        User user = userRepository.findByEmail(email).orElseThrow(() -> new ResourceNotFoundException(String.format(USER_NOT_FOUND_MESSAGE, email)));
+        eventPublisher.publishEvent(user);
     }
 
     public LoginResponse refreshToken(String refreshToken) {
@@ -79,7 +85,7 @@ public class AuthServiceImpl implements AuthService {
         }
 
         User user = userRepository.findByEmailAndIsVerifiedTrue(tokenEmail)
-                .orElseThrow(() -> new ResourceNotFoundException(String.format("User not found with email: %s", tokenEmail)));
+                .orElseThrow(() -> new ResourceNotFoundException(String.format(USER_NOT_FOUND_MESSAGE, tokenEmail)));
 
         jwtUtil.deleteToken(refreshToken);
 
@@ -99,7 +105,7 @@ public class AuthServiceImpl implements AuthService {
             throw new IllegalArgumentException("Email does not match token");
         }
 
-        User user = userRepository.findByEmail(email).orElseThrow(() -> new ResourceNotFoundException(String.format("User not found with email: %s", email)));
+        User user = userRepository.findByEmail(email).orElseThrow(() -> new ResourceNotFoundException(String.format(USER_NOT_FOUND_MESSAGE, email)));
 
         if (user.isVerified()) {
             throw new IllegalStateException("Email already verified.");
@@ -111,12 +117,10 @@ public class AuthServiceImpl implements AuthService {
 
     public void initiatePasswordReset(String email) {
         User user = userRepository.findByEmailAndIsVerifiedTrue(email)
-                .orElseThrow(() -> new ResourceNotFoundException(String.format("User not found with email: %s", email)));
-        
-        // Generate a password reset token with short expiration (15 minutes)
-        String resetToken = jwtUtil.generateToken(user.getEmail(), CommonUtil.RESET_TOKEN_TYPE); // 15 minutes
-        
-        emailService.sendPasswordResetEmail(user.getEmail(), resetToken);
+                .orElseThrow(() -> new ResourceNotFoundException(String.format(USER_NOT_FOUND_MESSAGE, email)));
+
+        // Publish the reset password event to trigger email sending
+        eventPublisher.publishEvent(user.getEmail());
     }
 
     public void resetPassword(String email, String token, String newPassword) {
@@ -124,14 +128,14 @@ public class AuthServiceImpl implements AuthService {
         if (!jwtUtil.validateToken(token)) {
             throw new IllegalArgumentException("Invalid or expired reset token");
         }
-        
+
         String tokenEmail = jwtUtil.getEmailFromToken(token);
         if (!email.equals(tokenEmail)) {
             throw new IllegalArgumentException("Email does not match token");
         }
-        
+
         User user = userRepository.findByEmailAndIsVerifiedTrue(email)
-                .orElseThrow(() -> new ResourceNotFoundException(String.format("User not found with email: %s", email)));
+                .orElseThrow(() -> new ResourceNotFoundException(String.format(USER_NOT_FOUND_MESSAGE, email)));
         
         // Update the password
         user.setPassword(passwordEncoder.encode(newPassword));

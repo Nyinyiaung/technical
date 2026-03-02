@@ -1,16 +1,14 @@
 package com.technical.entity.user;
 
 import jakarta.persistence.*;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.*;
 
 import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "users")
-@Data
+@Getter
+@Setter
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
@@ -27,7 +25,9 @@ public class User {
 
     @Column(nullable = false, columnDefinition = "TEXT")
     private String name;
+
     private boolean isVerified;
+
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 

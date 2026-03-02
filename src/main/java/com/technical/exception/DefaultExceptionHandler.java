@@ -1,8 +1,8 @@
 package com.technical.exception;
 
-import com.technical.config.MessageConfig;
 import com.technical.commonutil.MasterCodeBase;
 import com.technical.dto.common.ErrorResponse;
+import com.technical.dto.common.ExceptionConfig;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.dao.DataAccessException;
@@ -20,15 +20,13 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 import java.io.IOException;
 import java.text.ParseException;
 import java.util.List;
+import java.util.Map;
 
 @RestControllerAdvice
 @RequiredArgsConstructor
 @Slf4j
 public class DefaultExceptionHandler extends MasterCodeBase {
 
-	private final MessageConfig messageConfig;
-
-	// code
 	private static final String SYSTEM_ERROR = "SYSTEM_ERROR";
 	private static final String DB_ERROR = "DB_ERROR";
 	private static final String USER_NOT_FOUND = "USER_NOT_FOUND";
@@ -37,72 +35,28 @@ public class DefaultExceptionHandler extends MasterCodeBase {
 	private static final String USER_EXISTS = "USER_EXISTS";
 	private static final String INVALID_PARAMS = "INVALID_PARAMS";
 	private static final String EMAIL_ERROR = "EMAIL_ERROR";
+	private static final String EMAIL_REQUIRE_VERIFICATION = "EMAIL_REQUIRE_VERIFICATION";
 
-	// ====== Exception handlers ======
-	@ExceptionHandler(RuntimeException.class)
-	public ResponseEntity<List<ErrorResponse>> handleRuntime(RuntimeException e) {
-		return errorResponse(SYSTEM_ERROR, "system.error", e.getMessage(), HttpStatus.EXPECTATION_FAILED, e);
-	}
-
-	@ExceptionHandler(DataIntegrityViolationException.class)
-	public ResponseEntity<List<ErrorResponse>> handleDataIntegrity(DataIntegrityViolationException e) {
-		return errorResponse(DB_ERROR, "database.error", e.getMessage(), HttpStatus.CONFLICT, e);
-	}
-
-	@ExceptionHandler(ParseException.class)
-	public ResponseEntity<List<ErrorResponse>> handleParse(ParseException e) {
-		return errorResponse(SYSTEM_ERROR, "date.parsing.error", e.getMessage(), HttpStatus.FORBIDDEN, e);
-	}
-
-	@ExceptionHandler(NullPointerException.class)
-	public ResponseEntity<List<ErrorResponse>> handleNullPointer(NullPointerException e) {
-		return errorResponse(SYSTEM_ERROR, "system.error", e.getMessage(), HttpStatus.NO_CONTENT, e);
-	}
-
-	@ExceptionHandler(UsernameNotFoundException.class)
-	public ResponseEntity<List<ErrorResponse>> handleUserNotFound(UsernameNotFoundException e) {
-		return errorResponse(USER_NOT_FOUND, "username.not.found", e.getMessage(), HttpStatus.NOT_FOUND, e);
-	}
-
-	@ExceptionHandler(AccessDeniedException.class)
-	public ResponseEntity<List<ErrorResponse>> handleAccessDenied(AccessDeniedException e) {
-		return errorResponse(NO_ACCESS, "user.access.rights.message", e.getMessage(), HttpStatus.UNAUTHORIZED, null);
-	}
-
-	@ExceptionHandler(BadCredentialsException.class)
-	public ResponseEntity<List<ErrorResponse>> handleBadCredentials(BadCredentialsException e) {
-		return errorResponse(WRONG_PASSWORD, "user.wrong.password", e.getMessage(), HttpStatus.FORBIDDEN, null);
-	}
-
-	@ExceptionHandler(DataAccessException.class)
-	public ResponseEntity<List<ErrorResponse>> handleDataAccess(DataAccessException e) {
-		return errorResponse(DB_ERROR, "data.access.exception.message", e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR, e);
-	}
-
-	@ExceptionHandler(IOException.class)
-	public ResponseEntity<List<ErrorResponse>> handleIO(IOException e) {
-		return errorResponse(SYSTEM_ERROR, "io.exception.message", e.getMessage(), HttpStatus.UNSUPPORTED_MEDIA_TYPE, e);
-	}
-
-	@ExceptionHandler(UserAlreadyExistsException.class)
-	public ResponseEntity<List<ErrorResponse>> handleUserAlreadyExists(UserAlreadyExistsException e) {
-		return errorResponse(USER_EXISTS, "username.already.registered", e.getMessage(), HttpStatus.CONFLICT, null);
-	}
-
-	@ExceptionHandler({EmailSendFailedException.class, MailSendException.class})
-	public ResponseEntity<List<ErrorResponse>> handleEmailError(Exception e) {
-		return errorResponse(
-				EMAIL_ERROR,
-				"email.sending.failed",
-				e.getMessage(),
-				HttpStatus.INTERNAL_SERVER_ERROR,
-				e
-		);
-	}
+	private static final Map<Class<? extends Exception>, ExceptionConfig> EXCEPTION_CONFIGS = Map.ofEntries(
+		Map.entry(RuntimeException.class, new ExceptionConfig(SYSTEM_ERROR, "system.error", HttpStatus.EXPECTATION_FAILED)),
+		Map.entry(DataIntegrityViolationException.class, new ExceptionConfig(DB_ERROR, "database.error", HttpStatus.CONFLICT)),
+		Map.entry(ParseException.class, new ExceptionConfig(SYSTEM_ERROR, "date.parsing.error", HttpStatus.FORBIDDEN)),
+		Map.entry(NullPointerException.class, new ExceptionConfig(SYSTEM_ERROR, "system.error", HttpStatus.NO_CONTENT)),
+		Map.entry(UsernameNotFoundException.class, new ExceptionConfig(USER_NOT_FOUND, "username.not.found", HttpStatus.NOT_FOUND)),
+		Map.entry(AccessDeniedException.class, new ExceptionConfig(NO_ACCESS, "user.access.rights.message", HttpStatus.UNAUTHORIZED, false)),
+		Map.entry(BadCredentialsException.class, new ExceptionConfig(WRONG_PASSWORD, "user.wrong.password", HttpStatus.FORBIDDEN, false)),
+		Map.entry(DataAccessException.class, new ExceptionConfig(DB_ERROR, "data.access.exception.message", HttpStatus.INTERNAL_SERVER_ERROR)),
+		Map.entry(IOException.class, new ExceptionConfig(SYSTEM_ERROR, "io.exception.message", HttpStatus.UNSUPPORTED_MEDIA_TYPE)),
+		Map.entry(UserAlreadyExistsException.class, new ExceptionConfig(USER_EXISTS, "username.already.registered", HttpStatus.CONFLICT, false)),
+		Map.entry(ResourceNotFoundException.class, new ExceptionConfig(USER_NOT_FOUND, "user.not.found", HttpStatus.NOT_FOUND)),
+		Map.entry(EmailRequireVerificationException.class, new ExceptionConfig(EMAIL_REQUIRE_VERIFICATION, "email.require.verification", HttpStatus.UNAUTHORIZED)),
+		Map.entry(EmailSendFailedException.class, new ExceptionConfig(EMAIL_ERROR, "email.sending.failed", HttpStatus.INTERNAL_SERVER_ERROR)),
+		Map.entry(MailSendException.class, new ExceptionConfig(EMAIL_ERROR, "email.sending.failed", HttpStatus.INTERNAL_SERVER_ERROR))
+	);
 
 	@ExceptionHandler(MethodArgumentNotValidException.class)
 	public ResponseEntity<List<ErrorResponse>> handleValidationErrors(MethodArgumentNotValidException ex) {
-		List<ErrorResponse> responses = ex.getBindingResult().getFieldErrors().stream()
+		final var responses = ex.getBindingResult().getFieldErrors().stream()
 				.map(error -> new ErrorResponse(INVALID_PARAMS, messageConfig.getMessage(error.getDefaultMessage()), null))
 				.toList();
 		log.error("Error Response: {}", responses);
@@ -110,7 +64,17 @@ public class DefaultExceptionHandler extends MasterCodeBase {
 	}
 
 	@ExceptionHandler(Exception.class)
-	public ResponseEntity<List<ErrorResponse>> handleGeneric(Exception e) {
+	public ResponseEntity<List<ErrorResponse>> handleException(Exception e) {
+		// Handle mapped exceptions
+		for (Map.Entry<Class<? extends Exception>, ExceptionConfig> entry : EXCEPTION_CONFIGS.entrySet()) {
+			if (entry.getKey().isInstance(e)) {
+				ExceptionConfig config = entry.getValue();
+				Exception exceptionToLog = config.logException() ? e : null;
+				return errorResponse(config.code(), config.messageKey(), e.getMessage(), config.status(), exceptionToLog);
+			}
+		}
+
+		// Default fallback for unmapped exceptions
 		return errorResponse(SYSTEM_ERROR, "general.exception", e.getMessage(), HttpStatus.FORBIDDEN, e);
 	}
 }

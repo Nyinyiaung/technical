@@ -34,6 +34,12 @@ public class AuthController extends MasterCodeBase {
         return successResponse("auth.login.success", loginResponse, HttpStatus.OK);
     }
 
+    @PostMapping("/resend-verification-email")
+    public ResponseEntity<SuccessResponse> resendVerificationEmail(@RequestParam(required = true) String email) {
+        authService.resendVerificationEmail(email);
+        return successResponse("auth.resend.verification.email", null, HttpStatus.OK);
+    }
+
     @PostMapping("/refresh-token")
     public ResponseEntity<SuccessResponse> refreshToken(@RequestParam String refreshToken) {
         LoginResponse refreshResponse = authService.refreshToken(refreshToken);
@@ -58,7 +64,7 @@ public class AuthController extends MasterCodeBase {
         return successResponse("auth.reset.password.success", null, HttpStatus.OK);
     }
 
-    @PostMapping(value="/api/logout")
+    @PostMapping(value="/logout")
     public ResponseEntity<SuccessResponse> logout (@RequestParam String token) {
         jwtTokenService.invalidateJwtToken(token);
         return successResponse("auth.logout.success", null, HttpStatus.OK);

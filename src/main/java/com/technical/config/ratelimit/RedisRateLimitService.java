@@ -53,7 +53,6 @@ public class RedisRateLimitService {
 
     public boolean shouldRateLimit(String path) {
         boolean result = properties.isEnabled() && properties.isPathIncluded(path);
-        log.info(result? "{} was enabled the rate limit": "{} was disabled the rate limit", path);
         return result;
     }
 }

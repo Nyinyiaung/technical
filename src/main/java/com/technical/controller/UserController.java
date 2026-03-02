@@ -28,7 +28,7 @@ public class UserController {
     }
 
     @GetMapping("/profiles")
-    public ResponseEntity<List<UserDTO>> getAllUserProfiles(@AuthenticationPrincipal UserDetails userDetails) {
+    public ResponseEntity<List<UserDTO>> getAllUserProfiles() {
         List<UserDTO> userList = userService.getAllUsers();
         return ResponseEntity.ok(userList);
     }

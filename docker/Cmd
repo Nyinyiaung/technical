@@ -17,7 +17,7 @@ docker images
 docker rm -f api
 
 # Remove image
-docker rmi api
+docker rmi technical-api
 
 # build image
 docker build -t api .

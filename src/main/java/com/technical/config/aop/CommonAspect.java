@@ -1,5 +1,6 @@
 package com.technical.config.aop;
 
+import com.technical.commonutil.CommonUtil;
 import com.technical.commonutil.MasterCodeBase;
 import com.technical.commonutil.SecurityUtil;
 import com.technical.commonutil.UserUtil;
@@ -48,7 +49,15 @@ public class CommonAspect extends MasterCodeBase {
         Instant start = Instant.now();
         log.info("[START] {}.{}() with arguments = {}", className, methodName, argsString);
 
-        Object result = joinPoint.proceed(); // call the method
+        Object result;
+        try {
+            result = joinPoint.proceed(); // call the method
+        } catch (Throwable e) {
+            Instant finish = Instant.now();
+            long duration = Duration.between(start, finish).toMillis();
+            log.error("[ERROR] {}.{}() failed with exception = {} ({} ms)", className, methodName, e.getMessage(), duration);
+            throw e; // Re-throw the exception
+        }
 
         Instant finish = Instant.now();
         long duration = Duration.between(start, finish).toMillis();
@@ -69,7 +78,7 @@ public class CommonAspect extends MasterCodeBase {
         }
 
         // Get client IP or other identifier
-        String clientId = getClientId(request);
+        String clientId = CommonUtil.getClientIP(request);
         String userName = UserUtil.getCurrentUsername();
         String rateLimitKey = String.format("rate_limit:%s:%s:%s", path, clientId, StringUtils.isEmpty(userName) ? "anonymous" : userName);
 
