@@ -1,7 +1,11 @@
 package com.technical.config.ratelimit;
 
+import com.technical.commonutil.CommonUtil;
+import com.technical.commonutil.UserUtil;
+import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.data.redis.core.ValueOperations;
 import org.springframework.stereotype.Service;
@@ -16,20 +20,24 @@ public class RedisRateLimitService {
     private final RedisTemplate<String, Integer> redisTemplate;
     private final RateLimitProperties properties;
 
-    public boolean isRateLimited(String key, String path) {
+    public boolean isRateLimited(HttpServletRequest request) {
         if (!properties.isEnabled()) {
             return false;
         }
 
-        // Get endpoint-specific config or use defaults
-        RateLimitProperties.EndpointConfig config = properties.getConfigForPath(path)
-                .orElseGet(() -> new RateLimitProperties.EndpointConfig() {{
-                    setLimit(properties.getDf().getLimit());
-                    setWindow(properties.getDf().getWindow());
-                }});
+        String path = request.getRequestURI();
+        String clientId = CommonUtil.getClientIP(request);
+        String userName = UserUtil.getCurrentUsername();
+        String key = String.format("rate_limit:%s:%s:%s", path, clientId, StringUtils.isEmpty(userName) ? "anonymous" : userName);
+
+        // Get endpoint-specific config
+        RateLimitProperties.EndpointConfig config = properties.getConfigForPath(path);
+        if (config == null) {
+            // No configuration found for this endpoint, allow the request
+            return false;
+        }
 
         log.info("config: {}", config);
-
         ValueOperations<String, Integer> valueOps = redisTemplate.opsForValue();
 
         // Atomically increment the counter
@@ -49,10 +57,5 @@ public class RedisRateLimitService {
         }
 
         return false;
-    }
-
-    public boolean shouldRateLimit(String path) {
-        boolean result = properties.isEnabled() && properties.isPathIncluded(path);
-        return result;
     }
 }

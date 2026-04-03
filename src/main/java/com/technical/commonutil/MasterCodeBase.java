@@ -3,8 +3,8 @@ package com.technical.commonutil;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.technical.config.MessageConfig;
 import com.technical.dto.common.ErrorResponse;
+import com.technical.dto.common.ExceptionConfig;
 import com.technical.dto.common.SuccessResponse;
-import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -16,10 +16,7 @@ import org.springframework.web.context.request.RequestContextHolder;
 import org.springframework.web.context.request.ServletRequestAttributes;
 
 import java.io.IOException;
-import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -40,15 +37,16 @@ public abstract class MasterCodeBase {
         );
     }
 
-    protected ResponseEntity<List<ErrorResponse>> errorResponse(
-            String code, String internalMessageKey, String exceptionMessage,
-            HttpStatus status, Exception e) {
-
+    protected ResponseEntity<List<ErrorResponse>> createErrorResponse(ExceptionConfig config, Exception e) {
         List<ErrorResponse> responses = new ArrayList<>();
-        responses.add(new ErrorResponse(code, messageConfig.getMessage(internalMessageKey), exceptionMessage));
+        responses.add(new ErrorResponse(config.code(), messageConfig.getMessage(config.messageKey()), e.getMessage()));
 
-        log.error("Error Response: {}", responses, e);
-        return new ResponseEntity<>(responses, new HttpHeaders(), status);
+        if (config.logException()) {
+            log.error("Error Response: {}", responses, e);
+        } else {
+            log.info("Validation Failed Response: {}", responses);
+        }
+        return new ResponseEntity<>(responses, new HttpHeaders(), config.status());
     }
 
     protected Object createErrorResponse(String message, String path, String errorCode, HttpStatus status) throws IOException {

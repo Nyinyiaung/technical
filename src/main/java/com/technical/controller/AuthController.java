@@ -4,6 +4,7 @@ import com.technical.commonutil.MasterCodeBase;
 import com.technical.config.jwt.service.JwtTokenService;
 import com.technical.dto.auth.request.ForgotPasswordRequest;
 import com.technical.dto.auth.request.LoginRequest;
+import com.technical.dto.auth.request.RefreshTokenRequest;
 import com.technical.dto.auth.request.RegisterRequest;
 import com.technical.dto.auth.request.ResetPasswordRequest;
 import com.technical.dto.auth.response.LoginResponse;
@@ -35,14 +36,14 @@ public class AuthController extends MasterCodeBase {
     }
 
     @PostMapping("/resend-verification-email")
-    public ResponseEntity<SuccessResponse> resendVerificationEmail(@RequestParam(required = true) String email) {
+    public ResponseEntity<SuccessResponse> resendVerificationEmail(@RequestParam String email) {
         authService.resendVerificationEmail(email);
         return successResponse("auth.resend.verification.email", null, HttpStatus.OK);
     }
 
     @PostMapping("/refresh-token")
-    public ResponseEntity<SuccessResponse> refreshToken(@RequestParam String refreshToken) {
-        LoginResponse refreshResponse = authService.refreshToken(refreshToken);
+    public ResponseEntity<SuccessResponse> refreshToken(@Valid @RequestBody RefreshTokenRequest request) {
+        LoginResponse refreshResponse = authService.refreshToken(request.getRefreshToken());
         return successResponse("auth.refresh.token.success", refreshResponse, HttpStatus.OK);
     }
 

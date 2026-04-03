@@ -49,20 +49,19 @@ public class CommonAspect extends MasterCodeBase {
         Instant start = Instant.now();
         log.info("[START] {}.{}() with arguments = {}", className, methodName, argsString);
 
-        Object result;
+        Object result = null;
         try {
-            result = joinPoint.proceed(); // call the method
-        } catch (Throwable e) {
+            result = joinPoint.proceed();
+            return result;
+        } finally {
             Instant finish = Instant.now();
             long duration = Duration.between(start, finish).toMillis();
-            log.error("[ERROR] {}.{}() failed with exception = {} ({} ms)", className, methodName, e.getMessage(), duration);
-            throw e; // Re-throw the exception
+            if (result != null) {
+                log.info("[END] {}.{}() with result = {} ({} ms)", className, methodName, result, duration);
+            } else {
+                log.info("[END] {}.{}() ({} ms)", className, methodName, duration);
+            }
         }
-
-        Instant finish = Instant.now();
-        long duration = Duration.between(start, finish).toMillis();
-        log.info("[END] {}.{}() with result = {} ({} ms)", className, methodName, result, duration);
-        return result;
     }
 
     // Rate limit aspect
@@ -70,21 +69,9 @@ public class CommonAspect extends MasterCodeBase {
     public Object rateLimit(ProceedingJoinPoint joinPoint) throws Throwable {
         HttpServletRequest request = ((ServletRequestAttributes)
                 RequestContextHolder.currentRequestAttributes()).getRequest();
-        String path = request.getRequestURI();
 
-        // Check if we should rate limit this path
-        if (!rateLimitService.shouldRateLimit(path)) {
-            return joinPoint.proceed();
-        }
-
-        // Get client IP or other identifier
-        String clientId = CommonUtil.getClientIP(request);
-        String userName = UserUtil.getCurrentUsername();
-        String rateLimitKey = String.format("rate_limit:%s:%s:%s", path, clientId, StringUtils.isEmpty(userName) ? "anonymous" : userName);
-
-        // Apply rate limiting
-        if (rateLimitService.isRateLimited(rateLimitKey, path)) {
-            return createErrorResponse("Too many requests. Please try again later.", path, "RATE_LIMIT_EXCEEDED", HttpStatus.TOO_MANY_REQUESTS);
+        if (rateLimitService.isRateLimited(request)) {
+            return createErrorResponse("Too many requests. Please try again later.", request.getRequestURI(), "RATE_LIMIT_EXCEEDED", HttpStatus.TOO_MANY_REQUESTS);
         }
 
         return joinPoint.proceed();

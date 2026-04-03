@@ -20,13 +20,15 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
+import org.springframework.web.servlet.config.annotation.ResourceHandlerRegistry;
+import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 
 import java.util.Arrays;
 import java.util.List;
 
 @Configuration
 @RequiredArgsConstructor
-public class WebSecurityConfig {
+public class WebSecurityConfig implements WebMvcConfigurer {
 	private final JwtAuthenticationEntryPoint jwtAuthenticationEntryPoint;
 	private final UserDetailsService jwtUserDetailsService;
 	private final JwtRequestFilter jwtRequestFilter;
@@ -36,6 +38,18 @@ public class WebSecurityConfig {
 
 	@Value("${bypass.urls}")
 	private String byPassUrls;
+
+	@Value("${app.upload.dir}")
+	private String uploadDir;
+
+	@Override
+	public void addResourceHandlers(ResourceHandlerRegistry registry) {
+		// Serve uploaded files
+		registry.addResourceHandler("/uploads/**")
+				.addResourceLocations("file:" + uploadDir + "/")
+				.setCachePeriod(3600)
+				.resourceChain(true);
+	}
 
 	@Bean
 	public SecurityFilterChain securityFilterChain(HttpSecurity httpSecurity) throws Exception {
@@ -64,7 +78,7 @@ public class WebSecurityConfig {
 	public CorsConfigurationSource corsConfigurationSource() {
 		CorsConfiguration configuration = new CorsConfiguration();
 		configuration.setAllowedOriginPatterns(List.of(origins.split(",")));
-		configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE"));
+		configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "PATCH"));
 		configuration.setAllowedHeaders(List.of("*"));
 		configuration.setAllowCredentials(true);
 

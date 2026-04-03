@@ -3,6 +3,7 @@ package com.technical.entity.user;
 import jakarta.persistence.*;
 import lombok.*;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 
 @Entity
@@ -27,6 +28,18 @@ public class User {
     private String name;
 
     private boolean isVerified;
+
+    @Column(length = 10)
+    private String gender;
+
+    @Column(name = "birthday")
+    private LocalDate birthday;
+
+    @Column(name = "profile_image_path", columnDefinition = "TEXT")
+    private String profileImgPath;
+
+    @Column(name = "phone")
+    private String phone;
 
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;

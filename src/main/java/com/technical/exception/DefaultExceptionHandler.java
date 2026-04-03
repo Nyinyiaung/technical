@@ -38,20 +38,23 @@ public class DefaultExceptionHandler extends MasterCodeBase {
 	private static final String EMAIL_REQUIRE_VERIFICATION = "EMAIL_REQUIRE_VERIFICATION";
 
 	private static final Map<Class<? extends Exception>, ExceptionConfig> EXCEPTION_CONFIGS = Map.ofEntries(
-		Map.entry(RuntimeException.class, new ExceptionConfig(SYSTEM_ERROR, "system.error", HttpStatus.EXPECTATION_FAILED)),
 		Map.entry(DataIntegrityViolationException.class, new ExceptionConfig(DB_ERROR, "database.error", HttpStatus.CONFLICT)),
 		Map.entry(ParseException.class, new ExceptionConfig(SYSTEM_ERROR, "date.parsing.error", HttpStatus.FORBIDDEN)),
 		Map.entry(NullPointerException.class, new ExceptionConfig(SYSTEM_ERROR, "system.error", HttpStatus.NO_CONTENT)),
-		Map.entry(UsernameNotFoundException.class, new ExceptionConfig(USER_NOT_FOUND, "username.not.found", HttpStatus.NOT_FOUND)),
-		Map.entry(AccessDeniedException.class, new ExceptionConfig(NO_ACCESS, "user.access.rights.message", HttpStatus.UNAUTHORIZED, false)),
-		Map.entry(BadCredentialsException.class, new ExceptionConfig(WRONG_PASSWORD, "user.wrong.password", HttpStatus.FORBIDDEN, false)),
 		Map.entry(DataAccessException.class, new ExceptionConfig(DB_ERROR, "data.access.exception.message", HttpStatus.INTERNAL_SERVER_ERROR)),
 		Map.entry(IOException.class, new ExceptionConfig(SYSTEM_ERROR, "io.exception.message", HttpStatus.UNSUPPORTED_MEDIA_TYPE)),
-		Map.entry(UserAlreadyExistsException.class, new ExceptionConfig(USER_EXISTS, "username.already.registered", HttpStatus.CONFLICT, false)),
-		Map.entry(ResourceNotFoundException.class, new ExceptionConfig(USER_NOT_FOUND, "user.not.found", HttpStatus.NOT_FOUND)),
-		Map.entry(EmailRequireVerificationException.class, new ExceptionConfig(EMAIL_REQUIRE_VERIFICATION, "email.require.verification", HttpStatus.UNAUTHORIZED)),
 		Map.entry(EmailSendFailedException.class, new ExceptionConfig(EMAIL_ERROR, "email.sending.failed", HttpStatus.INTERNAL_SERVER_ERROR)),
-		Map.entry(MailSendException.class, new ExceptionConfig(EMAIL_ERROR, "email.sending.failed", HttpStatus.INTERNAL_SERVER_ERROR))
+		Map.entry(MailSendException.class, new ExceptionConfig(EMAIL_ERROR, "email.sending.failed", HttpStatus.INTERNAL_SERVER_ERROR)),
+
+		Map.entry(EmailRequireVerificationException.class, new ExceptionConfig(EMAIL_REQUIRE_VERIFICATION, "email.require.verification", HttpStatus.UNAUTHORIZED, false)),
+		Map.entry(ResourceNotFoundException.class, new ExceptionConfig(USER_NOT_FOUND, "user.not.found", HttpStatus.NOT_FOUND, false)),
+		Map.entry(UsernameNotFoundException.class, new ExceptionConfig(USER_NOT_FOUND, "username.not.found", HttpStatus.NOT_FOUND, false)),
+		Map.entry(AccessDeniedException.class, new ExceptionConfig(NO_ACCESS, "user.access.rights.message", HttpStatus.UNAUTHORIZED, false)),
+		Map.entry(BadCredentialsException.class, new ExceptionConfig(WRONG_PASSWORD, "user.wrong.password", HttpStatus.FORBIDDEN, false)),
+		Map.entry(UserAlreadyExistsException.class, new ExceptionConfig(USER_EXISTS, "username.already.registered", HttpStatus.CONFLICT, false)),
+
+		// This should be last as it will catch all exceptions
+		Map.entry(RuntimeException.class, new ExceptionConfig(SYSTEM_ERROR, "system.error", HttpStatus.EXPECTATION_FAILED))
 	);
 
 	@ExceptionHandler(MethodArgumentNotValidException.class)
@@ -59,7 +62,7 @@ public class DefaultExceptionHandler extends MasterCodeBase {
 		final var responses = ex.getBindingResult().getFieldErrors().stream()
 				.map(error -> new ErrorResponse(INVALID_PARAMS, messageConfig.getMessage(error.getDefaultMessage()), null))
 				.toList();
-		log.error("Error Response: {}", responses);
+		log.info("Validation Failed Response: {}", responses);
 		return ResponseEntity.badRequest().body(responses);
 	}
 
@@ -69,12 +72,11 @@ public class DefaultExceptionHandler extends MasterCodeBase {
 		for (Map.Entry<Class<? extends Exception>, ExceptionConfig> entry : EXCEPTION_CONFIGS.entrySet()) {
 			if (entry.getKey().isInstance(e)) {
 				ExceptionConfig config = entry.getValue();
-				Exception exceptionToLog = config.logException() ? e : null;
-				return errorResponse(config.code(), config.messageKey(), e.getMessage(), config.status(), exceptionToLog);
+				return createErrorResponse(config, e);
 			}
 		}
 
 		// Default fallback for unmapped exceptions
-		return errorResponse(SYSTEM_ERROR, "general.exception", e.getMessage(), HttpStatus.FORBIDDEN, e);
+		return createErrorResponse(new ExceptionConfig(SYSTEM_ERROR, "general.exception", HttpStatus.FORBIDDEN), e);
 	}
 }
