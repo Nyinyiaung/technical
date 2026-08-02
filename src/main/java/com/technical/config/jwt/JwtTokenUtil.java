@@ -44,6 +44,11 @@ public class JwtTokenUtil {
 		return getClaimFromToken(token, Claims::getSubject);
 	}
 
+	// retrieve userId from jwt token
+	public Long getUserIdFromToken(String token) {
+		return getClaimFromToken(token, claims -> claims.get("userId", Long.class));
+	}
+
 	// retrieve expiration date from jwt token
 	public Date getExpirationDateFromToken(String token) {
 		return getClaimFromToken(token, Claims::getExpiration);
@@ -95,10 +100,11 @@ public class JwtTokenUtil {
 	}
 
 	// generate token for user
-	public String generateToken(String userName, String tokenType) {
+	public String generateToken(String userName, Long userId, String tokenType) {
 		Date timeout = getExpirationForTokenType(tokenType);
 		String token = Jwts.builder()
 				.setSubject(userName)
+				.claim("userId", userId)
 				.setIssuedAt(new Date(System.currentTimeMillis()))
 				.setExpiration(timeout)
 				.signWith(getSigningKey(), SignatureAlgorithm.HS256)

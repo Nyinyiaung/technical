@@ -1,6 +1,7 @@
 package com.technical.service.auth.impl;
 
 import com.technical.commonutil.CommonUtil;
+import com.technical.commonutil.UserUtil;
 import com.technical.config.jwt.JwtTokenUtil;
 import com.technical.dao.UserRepository;
 import com.technical.dto.auth.request.LoginRequest;
@@ -17,7 +18,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.security.authentication.AuthenticationManager;
-import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -60,11 +60,11 @@ public class AuthServiceImpl implements AuthService {
         }
 
         Authentication authentication = authenticationManager.authenticate(
-            new UsernamePasswordAuthenticationToken(loginRequest.getEmail(), loginRequest.getPassword())
+            new UserUtil(loginRequest.getEmail(), loginRequest.getPassword(), null, user.getId())
         );
         SecurityContextHolder.getContext().setAuthentication(authentication);
-        String accessToken = jwtUtil.generateToken(authentication.getName(), CommonUtil.ACCESS_TOKEN_TYPE);
-        String refreshToken = jwtUtil.generateToken(authentication.getName(), CommonUtil.REFRESH_TOKEN_TYPE);
+        String accessToken = jwtUtil.generateToken(authentication.getName(), user.getId(), CommonUtil.ACCESS_TOKEN_TYPE);
+        String refreshToken = jwtUtil.generateToken(authentication.getName(), user.getId(), CommonUtil.REFRESH_TOKEN_TYPE);
         return new LoginResponse(accessToken, refreshToken);
     }
 
@@ -89,8 +89,8 @@ public class AuthServiceImpl implements AuthService {
 
         jwtUtil.deleteToken(refreshToken);
 
-        String newAccessToken = jwtUtil.generateToken(user.getEmail(), CommonUtil.ACCESS_TOKEN_TYPE);
-        String newRefreshToken = jwtUtil.generateToken(user.getEmail(), CommonUtil.REFRESH_TOKEN_TYPE);
+        String newAccessToken = jwtUtil.generateToken(user.getEmail(), user.getId(), CommonUtil.ACCESS_TOKEN_TYPE);
+        String newRefreshToken = jwtUtil.generateToken(user.getEmail(), user.getId(), CommonUtil.REFRESH_TOKEN_TYPE);
         return new LoginResponse(newAccessToken, newRefreshToken);
     }
 

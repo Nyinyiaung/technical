@@ -1,6 +1,7 @@
 package com.technical.config.jwt;
 
 import com.technical.commonutil.CommonUtil;
+import com.technical.commonutil.UserUtil;
 import com.technical.config.jwt.service.JwtTokenServiceImpl;
 import com.technical.service.jwt.JwtUserDetailsService;
 import io.jsonwebtoken.ExpiredJwtException;
@@ -13,7 +14,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.jspecify.annotations.NonNull;
 import org.slf4j.MDC;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.web.authentication.WebAuthenticationDetailsSource;
@@ -51,6 +51,7 @@ public class JwtRequestFilter extends OncePerRequestFilter {
 		final String deviceID = CommonUtil.generateDeviceID(userAgent, clientIP);
 
 		String email = null;
+		Long userId = null;
 		String jwtToken = null;
 
 		// JWT Token is in the form "Bearer token". Remove Bearer word and get
@@ -59,17 +60,19 @@ public class JwtRequestFilter extends OncePerRequestFilter {
 			if (requestTokenHeader != null && requestTokenHeader.startsWith("Bearer ")) {
 				jwtToken = requestTokenHeader.substring(7);
 				email = jwtTokenUtil.getEmailFromToken(jwtToken);
+				userId = jwtTokenUtil.getUserIdFromToken(jwtToken);
 			}
 			
 			// Set MDC context for the entire request
 			MDC.put("API", requestURI);
 			MDC.put("email", email != null ? email : "anonymous");
+			MDC.put("userId", userId != null ? String.valueOf(userId) : "anonymous");
 			MDC.put("clientIP", clientIP);
 			MDC.put("deviceID", deviceID);
 			MDC.put("userAgent", userAgent != null && userAgent.length() > 100 ? userAgent.substring(0, 100) : userAgent);
 
 			if (email != null) {
-				log.info("User[{}] from device[{}] IP[{}] accessing {}", email, deviceID, clientIP, requestURI);
+				log.info("User[{}] userId[{}] from device[{}] IP[{}] accessing {}", email, userId, deviceID, clientIP, requestURI);
 			} else {
 				log.info("Anonymous user from device[{}] IP[{}] accessing {}", deviceID, clientIP, requestURI);
 			}
@@ -87,8 +90,9 @@ public class JwtRequestFilter extends OncePerRequestFilter {
 			UserDetails userDetails = jwtUserDetailsService.loadUserByUsername(email);
 			// if token is valid configure, Spring Security to manually set authentication
 			if (jwtTokenUtil.validateToken(jwtToken, userDetails.getUsername())) {
-				UsernamePasswordAuthenticationToken authToken = new UsernamePasswordAuthenticationToken(
-						userDetails, null, userDetails.getAuthorities());
+				// Create a custom authentication token that includes userId
+				UserUtil authToken = new UserUtil(
+						userDetails, null, userDetails.getAuthorities(), userId);
 				authToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(httpServletRequest));
 				// After setting the Authentication in the context, we specify that the current user is authenticated.
 				// So it passes the Spring Security Configurations successfully.
@@ -100,6 +104,7 @@ public class JwtRequestFilter extends OncePerRequestFilter {
 		} finally {
 			// Clean up MDC to prevent memory leaks
 			MDC.remove("email");
+			MDC.remove("userId");
 			MDC.remove("API");
 			MDC.remove("clientIP");
 			MDC.remove("deviceID");

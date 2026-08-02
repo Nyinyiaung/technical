@@ -42,7 +42,7 @@ public class MailHogServiceImpl implements EmailService {
 
         // Generate a password reset token with short expiration (30 minutes)
         String verificationToken = jwtUtil.generateToken(
-                user.getEmail(),
+                user.getEmail(), user.getId(),
                 CommonUtil.VERIFICATION_TOKEN_TYPE
         );
 
@@ -70,7 +70,7 @@ public class MailHogServiceImpl implements EmailService {
     public void sendPasswordResetEmail(String toEmail) {
 
         // Generate a password reset token with short expiration (15 minutes)
-        String resetToken = jwtUtil.generateToken(toEmail, CommonUtil.RESET_TOKEN_TYPE);
+        String resetToken = jwtUtil.generateToken(toEmail, null, CommonUtil.RESET_TOKEN_TYPE);
 
         Context context = new Context();
         context.setVariable("url", String.format(resetEmailUrl, domain, toEmail, resetToken));

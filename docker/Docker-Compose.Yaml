@@ -48,6 +48,15 @@ services:
       - GRAYLOG_ROOT_PASSWORD_SHA2=8c6976e5b5410415bde908bd4dee15dfb167a9c873fc4bb8a81f6f2ab448a918
       - GRAYLOG_WEB_ENDPOINT_URI=http://127.0.0.1:9000/api
       - GRAYLOG_MONGODB_URI=mongodb://mongodb:27017/graylog
+      - GRAYLOG_TRANSPORT_EMAIL_ENABLED=true
+      - GRAYLOG_TRANSPORT_EMAIL_HOSTNAME=smtp.gmail.com
+      - GRAYLOG_TRANSPORT_EMAIL_PORT=587
+      - GRAYLOG_TRANSPORT_EMAIL_USE_AUTH=true
+      - GRAYLOG_TRANSPORT_EMAIL_USE_TLS=true
+      - GRAYLOG_TRANSPORT_EMAIL_USE_SSL=false
+      - GRAYLOG_TRANSPORT_EMAIL_AUTH_USERNAME=freakybass3399@gmail.com
+      - GRAYLOG_TRANSPORT_EMAIL_AUTH_PASSWORD=iiqpvycnnbrzxlut
+      - GRAYLOG_TRANSPORT_EMAIL_FROM_EMAIL=freakybass3399@gmail.com
     depends_on:
       - mongodb
       - elasticsearch
@@ -119,6 +128,7 @@ services:
       - 8080:8080
     volumes:
       - api_data:/app/logs
+      - ./uploads:/app/uploads/profile-images
     depends_on:
       - mailhog
     networks:
